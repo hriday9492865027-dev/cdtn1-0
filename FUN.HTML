@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marvel Codeathon | The Infinity Initiative</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        hud: {
+                            cyan: '#00f3ff',
+                            dark: '#0a1a1f',
+                            alert: '#ff0033'
+                        },
+                        stone: {
+                            space: '#00ccff',
+                            mind: '#ffd700',
+                            reality: '#ff0033',
+                            power: '#cc00ff',
+                            time: '#00ff00',
+                            soul: '#ff6600'
+                        },
+                        comic: {
+                            bg: '#ffffff',
+                            dot: '#dddddd',
+                            panel: '#000000',
+                            yellow: '#f9d71c'
+                        }
+                    },
+                    fontFamily: {
+                        hud: ['Orbitron', 'monospace'],
+                        dossier: ['Special Elite', 'monospace'],
+                        hero: ['Cinzel', 'serif'],
+                        comic: ['Bangers', 'cursive']
+                    },
+                    backgroundImage: {
+                        'hero-pattern': "url('https://images.unsplash.com/photo-1626278664285-f796b9ee7806?q=80&w=2874&auto=format&fit=crop')",
+                    }
+                }
+            }
+        }
+    </script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Special+Elite&family=Cinzel:wght@900&family=Bangers&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            /* Realistic Mode Variables */
+            --bg-primary: #050505;
+            --text-main: white;
+            --accent-color: #00f3ff;
+            --border-style: 1px solid rgba(0, 243, 255, 0.3);
+            --font-head: 'Cinzel', serif;
+            --font-ui: 'Orbitron', monospace;
+            --card-bg: rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 10px rgba(0, 243, 255, 0.5);
+            --overlay-display: block;
+            /* For stars/nebula */
+            --comic-display: none;
+            /* For halftone/speech bubbles */
+            --border-radius: 0.5rem;
+            --transform-tilt: 0deg;
+            --character-opacity: 0.15;
+            --character-filter: drop-shadow(0 0 10px var(--accent-color));
+        }
+
+        /* COMIC MODE OVERRIDES */
+        body.comic-mode {
+            --bg-primary: #ffffff;
+            --text-main: #000000;
+            --accent-color: #000000;
+            --border-style: 4px solid #000000;
+            --font-head: 'Bangers', cursive;
+            --font-ui: 'Bangers', cursive;
+            --card-bg: #ffffff;
+            --shadow-glow: 10px 10px 0px rgba(0, 0, 0, 1);
+            --overlay-display: none;
+            --comic-display: block;
+            --border-radius: 0;
+            --transform-tilt: -1deg;
+            --character-opacity: 1;
+            --character-filter: drop-shadow(5px 5px 0px black);
+        }
+
+        body.comic-mode #hero {
+            background-image: url('avengers_comic_bg.jpg') !important;
+        }
+
+        /* Comic Text Styling */
+        body.comic-mode #hero-title {
+            background: none !important;
+            -webkit-text-fill-color: initial !important;
+            color: #ffde00 !important;
+            -webkit-text-stroke: 4px black;
+            text-shadow: 8px 8px 0px #000000;
+        }
+
+        body.comic-mode h2 {
+            color: #ffffff !important;
+            -webkit-text-stroke: 2px black;
+            text-shadow: 4px 4px 0px #000000;
+        }
+
+        body.comic-mode .text-hud-cyan {
+            color: #000000 !important;
+            background-color: #ffffff;
+            padding: 0 10px;
+            box-shadow: 5px 5px 0px black;
+            border: 2px solid black;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            overflow-x: hidden;
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        /* Comic Halftone Background */
+        .comic-bg {
+            display: var(--comic-display);
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background-image: radial-gradient(circle, #ddd 2px, transparent 2.5px);
+            background-size: 20px 20px;
+        }
+
+        /* Avengers Cinematic Background (Realistic) */
+        .stars-bg {
+            display: var(--overlay-display);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background-image: url('https://images.wallpapersden.com/image/download/the-avengers-dark-minimal-logo_bGlsa22UmZqaraWkpJRmZ21lrwdsa20.jpg');
+            /* Reliable Dark Avengers Logo */
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-blend-mode: overlay;
+            background-color: rgba(0, 0, 0, 0.7);
+            /* Darken for text contrast */
+        }
+
+        /* No more moveStars animation needed for static cinematic bg */
+
+        /* PARALLAX CHARACTERS */
+        .parallax-layer {
+            display: var(--overlay-display);
+            position: absolute;
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Iron Man (Left) */
+        .char-ironman {
+            top: 15%;
+            left: 5%;
+            font-size: 25rem;
+            color: rgba(255, 0, 0, 0.8);
+            opacity: var(--character-opacity);
+            filter: var(--character-filter);
+            transform-origin: center;
+        }
+
+        /* Spidey (Right Top) */
+        .char-spidey {
+            top: -5%;
+            right: 10%;
+            font-size: 15rem;
+            color: rgba(255, 0, 0, 0.8);
+            opacity: var(--character-opacity);
+            filter: var(--character-filter);
+        }
+
+        /* Cap Shield (Bottom Left) */
+        .char-cap {
+            bottom: 10%;
+            left: -5%;
+            font-size: 30rem;
+            color: rgba(0, 100, 255, 0.5);
+            opacity: var(--character-opacity);
+            filter: var(--character-filter);
+        }
+
+        /* Thor Hammer (Right Bottom) */
+        .char-thor {
+            bottom: 20%;
+            right: 5%;
+            font-size: 20rem;
+            color: rgba(200, 200, 200, 0.6);
+            opacity: var(--character-opacity);
+            filter: var(--character-filter);
+            transform: rotate(45deg);
+        }
+
+        /* Iron Man HUD Circle */
+        .arc-reactor-bg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(0, 243, 255, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            z-index: -1;
+            animation: pulseBg 4s infinite ease-in-out;
+        }
+
+        @keyframes pulseBg {
+
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 0.2;
+            }
+        }
+
+        /* HUD Overlay Elements */
+        .hud-corner {
+            position: fixed;
+            width: 50px;
+            height: 50px;
+            border: 2px solid var(--accent-color);
+            z-index: 50;
+            opacity: 0.7;
+            border-radius: var(--border-radius);
+            transition: all 0.5s ease;
+        }
+
+        body.comic-mode .hud-corner {
+            display: none;
+        }
+
+        .top-left {
+            top: 20px;
+            left: 20px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .top-right {
+            top: 20px;
+            right: 20px;
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .bottom-left {
+            bottom: 20px;
+            left: 20px;
+            border-right: none;
+            border-top: none;
+        }
+
+        .bottom-right {
+            bottom: 20px;
+            right: 20px;
+            border-left: none;
+            border-top: none;
+        }
+
+        .scan-line {
+            display: var(--overlay-display);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(0, 243, 255, 0.1);
+            animation: scan 3s linear infinite;
+            z-index: 49;
+            pointer-events: none;
+        }
+
+        @keyframes scan {
+            0% {
+                transform: translateY(-10px);
+            }
+
+            100% {
+                transform: translateY(110vh);
+            }
+        }
+
+        /* Dynamic Fonts & Borders */
+        h1,
+        h2,
+        h3 {
+            font-family: var(--font-head);
+            transition: font-family 0.3s;
+        }
+
+        p,
+        div,
+        span {
+            font-family: var(--font-ui);
+            transition: font-family 0.3s;
+        }
+
+        .dynamic-card {
+            background: var(--card-bg);
+            border: var(--border-style);
+            box-shadow: var(--shadow-glow);
+            transform: rotate(var(--transform-tilt));
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(5px);
+        }
+
+        .dynamic-card:hover {
+            transform: scale(1.02) rotate(0deg);
+        }
+
+        /* Toggle Switch */
+        .switch-container {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .switch-input {
+            display: none;
+        }
+
+        .switch-label {
+            width: 60px;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--accent-color);
+            border-radius: 99px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .switch-handle {
+            width: 20px;
+            height: 20px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        /* Comic Switch State */
+        body.comic-mode .switch-label {
+            background: #f9d71c;
+            border: 3px solid black;
+        }
+
+        body.comic-mode .switch-handle {
+            left: 32px;
+            background: #ff0033;
+            border: 2px solid black;
+            box-shadow: none;
+        }
+
+        /* Comic Speech Bubbles */
+        .speech-bubble {
+            display: var(--comic-display);
+            position: absolute;
+            background: white;
+            border: 4px solid black;
+            padding: 10px 20px;
+            border-radius: 50%;
+            color: black;
+            font-family: 'Bangers', cursive;
+            font-size: 1.5rem;
+            z-index: 20;
+            animation: popIn 0.5s forwards;
+            top: -30px;
+            right: -20px;
+            transform: rotate(15deg);
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0);
+            }
+
+            80% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1) rotate(15deg);
+            }
+        }
+
+        /* POW Effect */
+        .pow-effect {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            z-index: 100;
+            pointer-events: none;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .pow-active {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* 3D Flip Utilities */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+
+        .backface-hidden {
+            backface-visibility: hidden;
+        }
+
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+
+        .group:hover .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+
+        /* Hide Scrollbar for Roster */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+
+<body class="selection:bg-hud-cyan selection:text-black">
+
+    <!-- Backgrounds -->
+    <div class="stars-bg"></div>
+    <div class="comic-bg"></div>
+    <div class="scan-line"></div>
+
+    <!-- POW Effect Graphic -->
+    <div id="pow-graphic" class="pow-effect">
+        <svg width="400" height="400" viewBox="0 0 200 200">
+            <path
+                d="M100 20 L120 80 L180 60 L140 100 L190 140 L130 140 L100 190 L70 140 L10 140 L60 100 L20 60 L80 80 Z"
+                fill="#ff0033" stroke="black" stroke-width="5" />
+            <text x="100" y="115" text-anchor="middle" font-family="'Bangers', cursive" font-size="60" fill="yellow"
+                stroke="black" stroke-width="2">POW!</text>
+        </svg>
+    </div>
+
+    <!-- HUD Corners -->
+    <div class="hud-corner top-left flex flex-col justify-between p-2">
+        <div class="text-[0.6rem] text-hud-cyan tracking-widest animate-pulse" id="sys-status">SYS.ONLINE</div>
+    </div>
+    <div class="hud-corner top-right p-2"></div>
+    <div class="hud-corner bottom-left"></div>
+    <div class="hud-corner bottom-right p-2 text-right flex flex-col justify-end">
+        <div class="text-[0.6rem] text-hud-cyan tracking-widest">PWR: 400%</div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 p-6 flex justify-center items-center">
+        <div class="backdrop-blur-md bg-black/40 border border-hud-cyan/30 rounded-full px-8 py-3 flex items-center gap-8 relative dynamic-card"
+            id="nav-container">
+
+            <a href="#hero" class="group flex flex-col items-center gap-1 hover:scale-110 transition-transform">
+                <i class="fas fa-shield-alt text-hud-cyan text-xl"></i>
+            </a>
+
+            <!-- Stones Nav -->
+            <a href="#stones"
+                class="w-4 h-4 rounded-full bg-stone-space shadow-[0_0_15px_#00ccff] hover:scale-150 transition-transform"></a>
+            <a href="#stones"
+                class="w-4 h-4 rounded-full bg-stone-mind shadow-[0_0_15px_#ffd700] hover:scale-150 transition-transform"></a>
+            <a href="#register"
+                class="w-4 h-4 rounded-full bg-stone-reality shadow-[0_0_15px_#ff0033] hover:scale-150 transition-transform"></a>
+
+            <div class="text-xl font-bold font-head tracking-widest px-4 border-l border-r border-hud-cyan/30 text-hud-cyan"
+                id="nav-title">
+                S.H.I.E.L.D
+            </div>
+
+            <!-- Comic Mode Toggle -->
+            <div class="flex items-center gap-2">
+                <span class="text-[0.6rem] font-ui uppercase tracking-wider text-gray-400" id="mode-text">REALITY</span>
+                <label class="switch-container">
+                    <input type="checkbox" id="comic-toggle" class="switch-input">
+                    <div class="switch-label">
+                        <div class="switch-handle"></div>
+                    </div>
+                </label>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="hero"
+        class="min-h-screen flex flex-col justify-center items-center relative perspective-1000 overflow-hidden"
+        style="background-image: url('avengers_hero_bg.jpg'); background-size: cover; background-position: center;">
+        <div class="absolute inset-0 bg-black/30 z-0"></div> <!-- Overlay for text readability -->
+        <div class="arc-reactor-bg z-0 opacity-30"></div>
+
+
+        <div class="z-10 text-center relative max-w-5xl px-4 mt-32">
+            <div class="speech-bubble" style="top: -50px; right: -50px; transform: rotate(20deg);">ASSEMBLE!</div>
+            <h2 class="text-hud-cyan tracking-[1rem] text-sm md:text-xl font-bold mb-4 uppercase animate-pulse"
+                id="hero-subtitle">VIGNAN #2K25</h2>
+            <h1 class="text-6xl md:text-9xl font-head text-transparent bg-clip-text bg-gradient-to-b from-gray-100 to-gray-500 drop-shadow-[0_0_25px_rgba(255,255,255,0.3)] mb-4 tracking-tighter"
+                id="hero-title">
+                MARVEL<br><span class="text-red-600">CODEATHON</span>
+            </h1>
+            <p class="text-marvel-gold max-w-2xl mx-auto text-lg mb-10 font-dossier font-bold drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
+                id="hero-desc">
+                "The world has changed and none of us can go back. All we can do is our best, and sometimes the best
+                that we can do is to start over." - Peggy Carter
+            </p>
+
+            <a href="#roster"
+                class="inline-flex items-center gap-4 px-8 py-4 border border-hud-cyan bg-hud-dark/50 text-hud-cyan hover:bg-hud-cyan hover:text-black transition-all group uppercase tracking-widest text-sm relative overflow-hidden dynamic-card">
+                <span class="relative z-10">Access Protocol</span>
+                <i class="fas fa-fingerprint text-lg relative z-10"></i>
+            </a>
+        </div>
+    </section>
+
+
+
+    <!-- Infinity Stones Roster -->
+    <section id="roster" class="py-24 px-6 max-w-7xl mx-auto overflow-hidden">
+        <h2 class="text-4xl text-center font-head mb-20 tracking-widest relative">
+            CHOOSE YOUR INFINITY STONE(BRANCH)
+            <div class="speech-bubble" style="top: -40px; right: 20%; transform: rotate(10deg);">POWER UP!</div>
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center">
+
+            <!-- Space Stone -->
+            <div class="min-w-[300px] h-[450px] dynamic-card relative group perspective-1000 snap-center">
+                <div
+                    class="relative w-full h-full transition-transform duration-700 transform-style-3d group-hover:rotate-y-180">
+                    <!-- Front -->
+                    <div
+                        class="absolute inset-0 backface-hidden flex flex-col items-center justify-center bg-gradient-to-br from-blue-900 to-black border-2 border-blue-400 rounded-xl overflow-hidden">
+
+                        <img src="mind_stone_logo.png"
+                            class="w-48 h-48 object-contain absolute top-10 opacity-90 drop-shadow-[0_0_8px_rgba(0,100,255,0.6)] filter hue-rotate-[210deg] saturate-150 brightness-95"
+                            alt="Space Stone">
+                        <div class="w-full h-1/2 opacity-80 mix-blend-overlay">
+                        </div>
+                        <h3 class="text-3xl font-head text-white mt-4 uppercase tracking-wider relative z-10">SPACE
+                            STONE
+                        </h3>
+                        <div class="text-blue-300 text-xs tracking-[0.3em] font-ui">TESSERACT</div>
+                        <div class="mt-8 px-4 py-1 border border-blue-400 text-blue-400 text-xs font-ui rounded">
+                            BRANCH:
+                            AI&DS</div>
+                    </div>
+                    <!-- Back -->
+                    <div
+                        class="absolute inset-0 backface-hidden rotate-y-180 bg-black border-2 border-blue-400 rounded-xl p-6 flex flex-col justify-center">
+                        <h4 class="text-blue-400 font-head text-xl mb-4 text-center">OMNIPRESENCE</h4>
+                        <div class="space-y-4 font-ui text-xs text-gray-300">
+                            <p class="text-center">Control over space itself. Travel to any location in the universe
+                                instantaneously. Move objects across vast distances.</p>
+                            <div class="border-t border-gray-800 pt-4 mt-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span>TELEPORTATION</span>
+                                    <div class="w-16 h-1 bg-blue-900">
+                                        <div class="h-full bg-blue-400 w-full"></div>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>DIMENSIONALITY</span>
+                                    <div class="w-16 h-1 bg-blue-900">
+                                        <div class="h-full bg-blue-400 w-[90%]"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mind Stone -->
+            <div class="min-w-[300px] h-[450px] dynamic-card relative group perspective-1000 snap-center">
+                <div
+                    class="relative w-full h-full transition-transform duration-700 transform-style-3d group-hover:rotate-y-180">
+                    <div
+                        class="absolute inset-0 backface-hidden flex flex-col items-center justify-center bg-gradient-to-br from-yellow-900 to-black border-2 border-yellow-400 rounded-xl overflow-hidden">
+                        <img src="mind_stone_logo.png"
+                            class="w-48 h-48 object-contain absolute top-10 opacity-80 drop-shadow-[0_0_15px_rgba(255,215,0,0.8)] filter brightness-125"
+                            alt="Mind Stone">
+                        <div
+                            class="w-full h-1/2 bg-[url('https://images.unsplash.com/photo-1555547167-74898d89e02c')] bg-cover bg-center opacity-80 mix-blend-overlay">
+                        </div>
+                        <h3 class="text-3xl font-head text-white mt-4 uppercase tracking-wider relative z-10">MIND STONE
+                        </h3>
+                        <div class="text-yellow-300 text-xs tracking-[0.3em] font-ui">SCEPTER</div>
+                        <div class="mt-8 px-4 py-1 border border-yellow-400 text-yellow-400 text-xs font-ui rounded">
+                            BRANCH:
+                            CSE-AI</div>
+                    </div>
+                    <div
+                        class="absolute inset-0 backface-hidden rotate-y-180 bg-black border-2 border-yellow-400 rounded-xl p-6 flex flex-col justify-center">
+                        <h4 class="text-yellow-400 font-head text-xl mb-4 text-center">OMNISCIENCE</h4>
+                        <div class="space-y-4 font-ui text-xs text-gray-300">
+                            <p class="text-center">Grants the user infinite knowledge and psionic abilities. Can control
+                                the minds of others.</p>
+                            <div class="border-t border-gray-800 pt-4 mt-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span>TELEPATHY</span>
+                                    <div class="w-16 h-1 bg-yellow-900">
+                                        <div class="h-full bg-yellow-400 w-[95%]"></div>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>AI SENTIENCE</span>
+                                    <div class="w-16 h-1 bg-yellow-900">
+                                        <div class="h-full bg-yellow-400 w-full"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reality Stone -->
+            <div class="min-w-[300px] h-[450px] dynamic-card relative group perspective-1000 snap-center">
+                <div
+                    class="relative w-full h-full transition-transform duration-700 transform-style-3d group-hover:rotate-y-180">
+                    <div
+                        class="absolute inset-0 backface-hidden flex flex-col items-center justify-center bg-gradient-to-br from-red-900 to-black border-2 border-red-500 rounded-xl overflow-hidden">
+                        <img src="reality_stone_logo_v2.png"
+                            class="w-48 h-48 object-contain absolute top-10 opacity-80 drop-shadow-[0_0_15px_rgba(255,0,51,0.8)] filter brightness-125"
+                            alt="Reality Stone">
+                        <div class="w-full h-1/2 opacity-80 mix-blend-overlay">
+                        </div>
+                        <h3 class="text-3xl font-head text-white mt-4 uppercase tracking-wider relative z-10">REALITY
+                            STONE
+                        </h3>
+                        <div class="text-red-400 text-xs tracking-[0.3em] font-ui">AETHER</div>
+                        <div class="mt-8 px-4 py-1 border border-red-500 text-red-500 text-xs font-ui rounded">BRANCH:
+                            IT</div>
+                    </div>
+                    <div
+                        class="absolute inset-0 backface-hidden rotate-y-180 bg-black border-2 border-red-500 rounded-xl p-6 flex flex-col justify-center">
+                        <h4 class="text-red-500 font-head text-xl mb-4 text-center">ALTERATION</h4>
+                        <div class="space-y-4 font-ui text-xs text-gray-300">
+                            <p class="text-center">Fulfils wishes. Creates illusions. Alters the fabric of reality
+                                itself to the user's will.</p>
+                            <div class="border-t border-gray-800 pt-4 mt-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span>MATTER MANIP</span>
+                                    <div class="w-16 h-1 bg-red-900">
+                                        <div class="h-full bg-red-500 w-full"></div>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>ILLUSIONS</span>
+                                    <div class="w-16 h-1 bg-red-900">
+                                        <div class="h-full bg-red-500 w-[95%]"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Power Stone -->
+            <div class="min-w-[300px] h-[450px] dynamic-card relative group perspective-1000 snap-center">
+                <div
+                    class="relative w-full h-full transition-transform duration-700 transform-style-3d group-hover:rotate-y-180">
+                    <div
+                        class="absolute inset-0 backface-hidden flex flex-col items-center justify-center bg-gradient-to-br from-purple-900 to-black border-2 border-purple-500 rounded-xl overflow-hidden">
+                        <img src="mind_stone_logo.png"
+                            class="w-48 h-48 object-contain absolute top-10 opacity-80 drop-shadow-[0_0_15px_rgba(204,0,255,0.8)] filter brightness-125 hue-rotate-[240deg]"
+                            alt="Power Stone">
+                        <div
+                            class="w-full h-1/2 bg-[url('https://images.unsplash.com/photo-1563293887-21a48c668c2f')] bg-cover bg-center opacity-80 mix-blend-overlay">
+                        </div>
+                        <h3 class="text-3xl font-head text-white mt-4 uppercase tracking-wider relative z-10">POWER
+                            STONE
+                        </h3>
+                        <div class="text-purple-400 text-xs tracking-[0.3em] font-ui">ORB</div>
+                        <div class="mt-8 px-4 py-1 border border-purple-500 text-purple-500 text-xs font-ui rounded">
+                            BRANCH:
+                            CSE</div>
+                    </div>
+                    <div
+                        class="absolute inset-0 backface-hidden rotate-y-180 bg-black border-2 border-purple-500 rounded-xl p-6 flex flex-col justify-center">
+                        <h4 class="text-purple-500 font-head text-xl mb-4 text-center">DESTRUCTION</h4>
+                        <div class="space-y-4 font-ui text-xs text-gray-300">
+                            <p class="text-center">Infinite energy source. Increases physical strength and durability.
+                                Can destroy entire planets.</p>
+                            <div class="border-t border-gray-800 pt-4 mt-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span>ENERGY BLAST</span>
+                                    <div class="w-16 h-1 bg-purple-900">
+                                        <div class="h-full bg-purple-500 w-full"></div>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>STRENGTH</span>
+                                    <div class="w-16 h-1 bg-purple-900">
+                                        <div class="h-full bg-purple-500 w-full"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Time Stone -->
+            <div class="min-w-[300px] h-[450px] dynamic-card relative group perspective-1000 snap-center">
+                <div
+                    class="relative w-full h-full transition-transform duration-700 transform-style-3d group-hover:rotate-y-180">
+                    <div
+                        class="absolute inset-0 backface-hidden flex flex-col items-center justify-center bg-gradient-to-br from-green-900 to-black border-2 border-green-400 rounded-xl overflow-hidden">
+                        <img src="mind_stone_logo.png"
+                            class="w-48 h-48 object-contain absolute top-10 opacity-80 drop-shadow-[0_0_15px_rgba(0,255,0,0.8)] filter brightness-125 hue-rotate-[80deg]"
+                            alt="Time Stone">
+                        <div class="w-full h-1/2 opacity-80 mix-blend-overlay">
+                        </div>
+                        <h3 class="text-3xl font-head text-white mt-4 uppercase tracking-wider relative z-10">TIME STONE
+                        </h3>
+                        <div class="text-green-300 text-xs tracking-[0.3em] font-ui">EYE OF AGAMOTTO</div>
+                        <div class="mt-8 px-4 py-1 border border-green-400 text-green-400 text-xs font-ui rounded">
+                            BRANCH:
+                            CSE-CS</div>
+                    </div>
+                    <div
+                        class="absolute inset-0 backface-hidden rotate-y-180 bg-black border-2 border-green-400 rounded-xl p-6 flex flex-col justify-center">
+                        <h4 class="text-green-400 font-head text-xl mb-4 text-center">CHRONOKINESIS</h4>
+                        <div class="space-y-4 font-ui text-xs text-gray-300">
+                            <p class="text-center">Control over the flow of time. Rewind, fast-forward, stop, and loop
+                                time. See future possibilities.</p>
+                            <div class="border-t border-gray-800 pt-4 mt-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span>PRECOGNITION</span>
+                                    <div class="w-16 h-1 bg-green-900">
+                                        <div class="h-full bg-green-400 w-[95%]"></div>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>TIME LOOP</span>
+                                    <div class="w-16 h-1 bg-green-900">
+                                        <div class="h-full bg-green-400 w-full"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Soul Stone -->
+            <div class="min-w-[300px] h-[450px] dynamic-card relative group perspective-1000 snap-center">
+                <div
+                    class="relative w-full h-full transition-transform duration-700 transform-style-3d group-hover:rotate-y-180">
+                    <div
+                        class="absolute inset-0 backface-hidden flex flex-col items-center justify-center bg-gradient-to-br from-orange-900 to-black border-2 border-orange-400 rounded-xl overflow-hidden">
+                        <img src="soul_stone_logo_v2.png"
+                            class="w-48 h-48 object-contain absolute top-10 opacity-80 drop-shadow-[0_0_15px_rgba(255,102,0,0.8)] filter brightness-125"
+                            alt="Soul Stone">
+                        <div
+                            class="w-full h-1/2 bg-[url('https://images.unsplash.com/photo-1510526084922-387063467666')] bg-cover bg-center opacity-80 mix-blend-overlay">
+                        </div>
+                        <h3 class="text-3xl font-head text-white mt-4 uppercase tracking-wider relative z-10">SOUL STONE
+                        </h3>
+                        <div class="text-orange-300 text-xs tracking-[0.3em] font-ui">VORMIR</div>
+                        <div class="mt-8 px-4 py-1 border border-orange-400 text-orange-400 text-xs font-ui rounded">
+                            BRANCH:
+                            CSE-DS</div>
+                    </div>
+                    <div
+                        class="absolute inset-0 backface-hidden rotate-y-180 bg-black border-2 border-orange-400 rounded-xl p-6 flex flex-col justify-center">
+                        <h4 class="text-orange-400 font-head text-xl mb-4 text-center">LIFE & DEATH</h4>
+                        <div class="space-y-4 font-ui text-xs text-gray-300">
+                            <p class="text-center">Control over life and death. Can steal, manipulate, and alter souls.
+                                A gateway to a pocket dimension.</p>
+                            <div class="border-t border-gray-800 pt-4 mt-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span>SOUL MANIP</span>
+                                    <div class="w-16 h-1 bg-orange-900">
+                                        <div class="h-full bg-orange-400 w-full"></div>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>RESURRECTION</span>
+                                    <div class="w-16 h-1 bg-orange-900">
+                                        <div class="h-full bg-orange-400 w-[50%]"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+
+    </div>
+    </section>
+
+    <!-- Registration -->
+    <section id="register" class="py-24 px-4 relative">
+        <div class="max-w-4xl mx-auto dynamic-card p-10 md:p-14 relative shadow-2xl"
+            style="background-color: #f4ecdf; color: black; background-image: url('data:image/svg+xml,%3Csvg width=\'100\' height=\'100\' viewBox=\'0 0 100 100\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7z\' fill=\'%23d0c5b0\' fill-opacity=\'0.4\'/%3E%3C/g%3E%3C/svg%3E');">
+
+
+            <div
+                class="absolute top-10 right-10 border-4 border-red-700 text-red-700 p-2 font-black text-xl -rotate-12 opacity-70">
+                TOP SECRET</div>
+
+            <div class="flex items-center mb-8 border-b-2 border-dashed border-gray-400 pb-4">
+                <i class="fas fa-user-secret text-4xl mr-4 opacity-70"></i>
+                <div>
+                    <h2 class="font-dossier text-3xl font-bold">AGENT ENLISTMENT FORM</h2>
+                    <p class="font-dossier text-sm text-gray-600 tracking-widest">S.H.I.E.L.D. PERSONNEL FILE #94-B</p>
+                </div>
+            </div>
+
+            <form class="space-y-6 font-dossier">
+                <!-- Personal Info -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <label class="block font-bold mb-1 uppercase text-xs">Agent Name (Full Name)</label>
+                        <input type="text" required
+                            class="w-full bg-transparent border-b-2 border-gray-800 focus:border-red-700 focus:outline-none py-2 font-bold uppercase"
+                            placeholder="LASTNAME, FIRSTNAME">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1 uppercase text-xs">Comms Frequency (Email)</label>
+                        <input type="email" required
+                            class="w-full bg-transparent border-b-2 border-gray-800 focus:border-red-700 focus:outline-none py-2 lowercase"
+                            oninput="this.value = this.value.toLowerCase()" placeholder="agent@shield.gov">
+                    </div>
+                </div>
+
+                <!-- Academic Info -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <label class="block font-bold mb-1 uppercase text-xs">Identification Code (Roll No)</label>
+                        <input type="text" required
+                            class="w-full bg-transparent border-b-2 border-gray-800 focus:border-red-700 focus:outline-none py-2 font-mono"
+                            placeholder="21XX1A05XX">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1 uppercase text-xs">Base of Operations (College)</label>
+                        <input type="text" value="VIGNAN INSTITUTE OF INFORMATION TECHNOLOGY" readonly
+                            class="w-full bg-transparent border-b-2 border-gray-800 focus:border-red-700 focus:outline-none py-2 uppercase cursor-not-allowed text-xs">
+                    </div>
+                </div>
+
+                <!-- Department Info -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <label class="block font-bold mb-1 uppercase text-xs">Division (Branch)</label>
+                        <select required
+                            class="w-full bg-transparent border-b-2 border-gray-800 focus:border-red-700 focus:outline-none py-2 uppercase">
+                            <option>MIND STONE (CSE/AI)</option>
+                            <option>SPACE STONE (AI&DS)</option>
+                            <option>REALITY STONE (IT)</option>
+                            <option>POWER STONE (CSE)</option>
+                            <option>TIME STONE (CSE-CS)</option>
+                            <option>SOUL STONE (CSE-DS)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1 uppercase text-xs">Clearance Level (Year)</label>
+                        <input type="text" value="LEVEL 1 (1ST YEAR)" readonly
+                            class="w-full bg-transparent border-b-2 border-gray-800 focus:border-red-700 focus:outline-none py-2 uppercase cursor-not-allowed">
+                    </div>
+                </div>
+
+                <!-- Skills -->
+                <div>
+                    <label class="block font-bold mb-1 uppercase text-xs">Specialized Skillset</label>
+                    <textarea
+                        class="w-full bg-transparent border-2 border-gray-400 p-2 focus:border-red-700 focus:outline-none h-24 font-mono text-sm"
+                        placeholder="List your superpowers..."></textarea>
+                </div>
+
+                <div class="pt-8 text-center relative">
+                    <button type="submit"
+                        class="bg-black text-white px-10 py-4 font-bold hover:bg-red-800 transition-colors uppercase tracking-widest text-sm shadow-xl dynamic-card relative z-10"
+                        style="color: white; border-radius: 2px;">
+                        CONFIRM ENLISTMENT
+                    </button>
+                    <!-- Watermark -->
+                    <i
+                        class="fab fa-shield-alt absolute top-0 left-1/2 transform -translate-x-1/2 text-9xl text-gray-400 opacity-10 z-0"></i>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <footer class="py-10 text-center font-ui text-sm opacity-60">
+        STARK INDUSTRIES 2025 | VERIFIED BY S.H.I.E.L.D.
+    </footer>
+
+    <!-- Logic -->
+    <script>
+        const toggle = document.getElementById('comic-toggle');
+        const body = document.body;
+        const powEffect = document.getElementById('pow-graphic');
+
+        // Check local storage
+        if (localStorage.getItem('mode') === 'comic') {
+            body.classList.add('comic-mode');
+            toggle.checked = true;
+        }
+
+        toggle.addEventListener('change', (e) => {
+            // Trigger POW Animation
+            powEffect.classList.add('pow-active');
+            setTimeout(() => {
+                powEffect.classList.remove('pow-active');
+            }, 500);
+
+            if (e.target.checked) {
+                body.classList.add('comic-mode');
+                localStorage.setItem('mode', 'comic');
+                document.getElementById('mode-text').innerText = 'COMIC';
+                document.title = "Marvel Codeathon | Comic Edition";
+            } else {
+                body.classList.remove('comic-mode');
+                localStorage.setItem('mode', 'realistic');
+                document.getElementById('mode-text').innerText = 'REALITY';
+                document.title = "Marvel Codeathon | The Infinity Initiative";
+            }
+        });
+
+        // Form Animation
+        document.querySelector('form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const original = btn.innerText;
+            btn.innerText = "ENCRYPTING DATA...";
+            btn.style.backgroundColor = "#cc0000";
+
+            setTimeout(() => {
+                btn.innerText = "ACCESS GRANTED";
+                btn.style.backgroundColor = "#228B22";
+                alert("Welcome to the Initiative, Agent.");
+            }, 2000);
+        });
+
+        // PARALLAX EFFECT
+        document.addEventListener('mousemove', (e) => {
+            const layers = document.querySelectorAll('.parallax-layer');
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+
+            const mouseX = e.clientX - centerX;
+            const mouseY = e.clientY - centerY;
+
+            layers.forEach(layer => {
+                const speed = layer.getAttribute('data-speed');
+                const x = mouseX * speed;
+                const y = mouseY * speed;
+                layer.style.transform = `translate(${x}px, ${y}px)`;
+            });
+        });
+    </script>
+</body>
+
+</html>
